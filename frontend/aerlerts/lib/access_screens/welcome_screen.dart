@@ -1,4 +1,6 @@
 import 'package:aerlerts/components/rounded_button.dart';
+import 'package:aerlerts/screens/login_screen.dart';
+import 'package:aerlerts/screens/signup_screen.dart';
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -27,13 +29,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             RoundedButton(
               color: Colors.lightBlueAccent,
               text: 'Log In',
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pushNamed(context, LoginScreen.id);
+              },
             ), // Placeholder for the login button
             SizedBox(height: 20),
             RoundedButton(
-              color: Colors.blueAccent,
+              color: Colors.orangeAccent,
               text: 'Sign Up',
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pushNamed(context, SignupScreen.id);
+              },
             ),
             // Placeholder for the signup button
           ],
