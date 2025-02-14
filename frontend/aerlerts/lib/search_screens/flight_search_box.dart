@@ -12,7 +12,8 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
   TextEditingController fromController = TextEditingController();
   TextEditingController toController = TextEditingController();
   DateTimeRange? selectedDateRange;
-  String passengerCount = "1 Adult";
+  int adultCount = 1;
+  int childCount = 0;
   String cabinClass = "Economy";
   int _selectedIndex = 0; // Track selected tab index
 
@@ -87,6 +88,98 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
     );
   }
 
+  void _openPassengerModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Select Passengers",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Adults"),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.remove),
+                            onPressed: () {
+                              setState(() {
+                                if (adultCount > 1) {
+                                  adultCount--;
+                                }
+                              });
+                            },
+                          ),
+                          Text(adultCount.toString()),
+                          IconButton(
+                            icon: Icon(Icons.add),
+                            onPressed: () {
+                              setState(() {
+                                adultCount++;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Children"),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.remove),
+                            onPressed: () {
+                              setState(() {
+                                if (childCount > 0) {
+                                  childCount--;
+                                }
+                              });
+                            },
+                          ),
+                          Text(childCount.toString()),
+                          IconButton(
+                            icon: Icon(Icons.add),
+                            onPressed: () {
+                              setState(() {
+                                childCount++;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  RoundedButton(
+                    color: Colors.orangeAccent,
+                    text: 'Done',
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      setState(() {}); // Update the UI with the new passenger count
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -107,6 +200,7 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
                 children: [
                   // Trip Selector (Centered with Elevation)
                   Card(
+                    color: Colors.white,
                     elevation: 5,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(32.0)),
@@ -154,6 +248,7 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
 
                   // Elevated Container for Form Fields
                   Card(
+                    color: Colors.white,
                     elevation: 5,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(32.0)),
@@ -187,16 +282,17 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
                             onTap: () => _selectDateRange(context),
                           ),
                           SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            value: passengerCount,
-                            decoration: customInputDecoration("Passengers",
-                                Icon(Icons.people, color: Colors.orangeAccent)),
-                            items: ["1 Adult", "2 Adults", "1 Adult, 1 Child"]
-                                .map((option) => DropdownMenuItem(
-                                    value: option, child: Text(option)))
-                                .toList(),
-                            onChanged: (value) =>
-                                setState(() => passengerCount = value!),
+                          TextField(
+                            readOnly: true,
+                            decoration: customInputDecoration(
+                              "Passengers",
+                              Icon(Icons.people, color: Colors.orangeAccent),
+                            ),
+                            onTap: () => _openPassengerModal(context),
+                            controller: TextEditingController(
+                              text:
+                                  "$adultCount Adult${adultCount > 1 ? 's' : ''}${childCount > 0 ? ', $childCount Child${childCount > 1 ? 'ren' : ''}' : ''}",
+                            ),
                           ),
                           SizedBox(height: 12),
                           DropdownButtonFormField<String>(

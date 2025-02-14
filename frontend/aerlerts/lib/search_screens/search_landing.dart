@@ -18,7 +18,7 @@ class _SearchLandingState extends State<SearchLanding> {
         child: AppBar(
           backgroundColor: Colors.white,
           elevation: 5,
-          shadowColor: Colors.black26,
+          shadowColor: Colors.white,
           centerTitle: true,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.center,
