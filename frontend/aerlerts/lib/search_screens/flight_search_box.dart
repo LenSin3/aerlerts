@@ -1,5 +1,10 @@
+// lib/search_screens/flight_search_box.dart
 import 'package:aerlerts/components/bottom_nav_bar.dart';
 import 'package:aerlerts/components/rounded_button.dart';
+import 'package:aerlerts/models/flight_routes.dart';
+import 'package:aerlerts/search_screens/alerts.dart';
+import 'package:aerlerts/search_screens/bookings.dart';
+import 'package:aerlerts/search_screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 
 class FlightSearchBox extends StatefulWidget {
@@ -16,25 +21,26 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
   int childCount = 0;
   String cabinClass = "Economy";
   int _selectedIndex = 0; // Track selected tab index
+  bool _showSearchResults = false;
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
 
-    // Handle Navigation - Replace with actual navigation logic
+    // Handle Navigation
     switch (index) {
       case 0:
-        print("Navigate to Home");
+        // Already on Home
         break;
       case 1:
-        print("Navigate to Bookings");
+        Navigator.pushReplacementNamed(context, BookingsScreen.id);
         break;
       case 2:
-        print("Navigate to Alerts");
+        Navigator.pushReplacementNamed(context, AlertScreen.id);
         break;
       case 3:
-        print("Navigate to Profile");
+        Navigator.pushReplacementNamed(context, ProfileScreen.id);
         break;
     }
   }
@@ -180,8 +186,365 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
     });
   }
 
+  void _searchFlights() {
+    // Validate inputs
+    if (fromController.text.isEmpty ||
+        toController.text.isEmpty ||
+        selectedDateRange == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please fill in all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Show search results
+    setState(() {
+      _showSearchResults = true;
+    });
+  }
+
+  void _createPriceAlert(Map<String, dynamic> flight) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Create Price Alert'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'We\'ll notify you when this flight price drops below:',
+              style: TextStyle(fontSize: 14),
+            ),
+            SizedBox(height: 15),
+            Row(
+              children: [
+                Text('\$',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(width: 5),
+                Expanded(
+                  child: TextField(
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Target price',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+
+              // Success message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Price alert created successfully!'),
+                  backgroundColor: Colors.green,
+                  action: SnackBarAction(
+                    label: 'VIEW ALERTS',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, AlertScreen.id);
+                    },
+                  ),
+                ),
+              );
+            },
+            child: Text('Create Alert'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getSearchResults() {
+    // Use our flight routes data model to search flights
+    if (fromController.text.isEmpty ||
+        toController.text.isEmpty ||
+        selectedDateRange == null) {
+      return [];
+    }
+
+    return FlightRoutesData.searchFlights(
+      origin: fromController.text,
+      destination: toController.text,
+      date: selectedDateRange!.start,
+      cabinClass: cabinClass,
+    );
+  }
+
+  Widget _buildSearchResults() {
+    final results = _getSearchResults();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Search Results',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0057B8),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _showSearchResults = false;
+                      });
+                    },
+                    child: Text('New Search'),
+                  ),
+                ],
+              ),
+              Text(
+                '${fromController.text} → ${toController.text}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 5),
+              Text(
+                'Date: ${selectedDateRange?.start.toString().substring(0, 10)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: results.length,
+            itemBuilder: (context, index) {
+              final flight = results[index];
+              return Card(
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            flight['airline'],
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Flight ${flight['flightNo']}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                flight['departureTime'],
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                flight['origin'],
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Text(
+                                  flight['duration'],
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                SizedBox(height: 5),
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      height: 2,
+                                      color: Colors.grey[300],
+                                    ),
+                                    flight['stops'] > 0
+                                        ? Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              border: Border.all(
+                                                  color: Colors.grey[300]!),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '${flight['stops']} stop',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              border: Border.all(
+                                                  color: Colors.grey[300]!),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              'Direct',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                flight['arrivalTime'],
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                flight['destination'],
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '\$${flight['price'].toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0057B8),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () => _createPriceAlert(flight),
+                                icon: Icon(Icons.notifications_active),
+                                label: Text('Alert'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.orangeAccent,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  // Book flight
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Booking functionality coming soon!'),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orangeAccent,
+                                ),
+                                child: Text('Book'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_showSearchResults) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: _buildSearchResults(),
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: () => FocusScope.of(context)
           .unfocus(), // Dismiss keyboard when tapping outside
@@ -279,6 +642,11 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
                               Icon(Icons.calendar_today,
                                   color: Colors.orangeAccent),
                             ),
+                            controller: TextEditingController(
+                              text: selectedDateRange != null
+                                  ? "${selectedDateRange!.start.toString().substring(0, 10)} to ${selectedDateRange!.end.toString().substring(0, 10)}"
+                                  : "",
+                            ),
                             onTap: () => _selectDateRange(context),
                           ),
                           SizedBox(height: 12),
@@ -318,9 +686,7 @@ class _FlightSearchBoxState extends State<FlightSearchBox> {
                   RoundedButton(
                     color: Colors.orangeAccent,
                     text: 'Search Flights',
-                    onPressed: () {
-                      print("Searching for flights...");
-                    },
+                    onPressed: _searchFlights,
                   ),
                   SizedBox(
                       height:

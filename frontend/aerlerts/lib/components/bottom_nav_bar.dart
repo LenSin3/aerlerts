@@ -1,3 +1,6 @@
+// lib/components/bottom_nav_bar.dart
+import 'package:aerlerts/search_screens/alerts.dart';
+import 'package:aerlerts/search_screens/search_landing.dart';
 import 'package:flutter/material.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -30,7 +33,16 @@ class BottomNavBar extends StatelessWidget {
           elevation: 5,
           type: BottomNavigationBarType.fixed,
           currentIndex: currentIndex,
-          onTap: onTap,
+          onTap: (index) {
+            onTap(index);
+
+            // Handle navigation
+            if (index == 0 && currentIndex != 0) {
+              Navigator.pushReplacementNamed(context, SearchLanding.id);
+            } else if (index == 2 && currentIndex != 2) {
+              Navigator.pushReplacementNamed(context, AlertScreen.id);
+            }
+          },
           items: [
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
